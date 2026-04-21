@@ -1,0 +1,63 @@
+import { router } from 'expo-router';
+import React from 'react';
+import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import Button from '../components/ui/Button';
+import { colors, fontSize, spacing } from '../constants/theme';
+
+export default function StartScreen() {
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        <View style={styles.textWrap}>
+          <Text style={styles.heading}>Get{'\n'}Started!</Text>
+          <Text style={styles.sub}>Start with sign up or sign in</Text>
+        </View>
+
+        <View style={styles.buttons}>
+          <Button
+            title="SIGN UP"
+            onPress={() => router.push('/sign-up')}
+            style={styles.btn}
+          />
+          <Button
+            title="SIGN IN"
+            onPress={() => router.push('/sign-in')}
+            style={styles.btn}
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
+  container: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: 40,
+    justifyContent: 'space-between',
+  },
+  textWrap: {
+    gap: spacing.sm,
+  },
+  heading: {
+    color: colors.text,
+    fontSize: fontSize.xxxl,
+    fontWeight: '800',
+    lineHeight: 46,
+    letterSpacing: -1,
+  },
+  sub: {
+    color: colors.secondary,
+    fontSize: fontSize.md,
+    marginTop: 4,
+  },
+  buttons: {
+    gap: spacing.md,
+  },
+  btn: {
+    width: '100%',
+  },
+});
