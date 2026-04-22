@@ -1,0 +1,13 @@
+package com.my_app.rhmvvCYB3R;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class RhmvvCyb3RApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
