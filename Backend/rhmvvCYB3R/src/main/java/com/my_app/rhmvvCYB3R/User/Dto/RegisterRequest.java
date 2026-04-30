@@ -12,7 +12,7 @@ public class RegisterRequest {
     public RegisterRequest(String email, String password, String confirmPassword){
         this.email = email;
         this.password = password;
-        this.confirmPassword=password;
+        this.confirmPassword=confirmPassword;
 
     }
 

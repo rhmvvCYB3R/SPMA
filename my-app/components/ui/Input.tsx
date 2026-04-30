@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { colors, fontSize, radius, spacing } from '../../constants/theme';
 
@@ -15,6 +15,7 @@ interface InputProps {
   maxLength?: number;
   style?: ViewStyle;
   focused?: boolean;
+  editable?: boolean; 
 }
 
 export default function Input({
@@ -29,6 +30,7 @@ export default function Input({
   numberOfLines,
   maxLength,
   style,
+  editable = true,
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -39,6 +41,7 @@ export default function Input({
         styles.container,
         multiline && styles.multiline,
         isFocused && styles.containerFocused,
+        !editable && styles.containerDisabled, 
         style,
       ]}
     >
@@ -57,12 +60,17 @@ export default function Input({
         maxLength={maxLength}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        editable={editable} 
       />
       {maxLength && (
         <Text style={styles.counter}>{value.length}/{maxLength}</Text>
       )}
       {secureTextEntry && (
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+        <TouchableOpacity 
+          onPress={() => setShowPassword(!showPassword)} 
+          style={styles.eyeBtn}
+          disabled={!editable} 
+        >
           <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁'}</Text>
         </TouchableOpacity>
       )}
@@ -84,6 +92,10 @@ const styles = StyleSheet.create({
   },
   containerFocused: {
     borderColor: colors.borderFocus,
+  },
+  containerDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#f0f0f0', 
   },
   multiline: {
     height: 100,

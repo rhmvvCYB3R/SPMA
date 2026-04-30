@@ -19,18 +19,12 @@ public class User {
     @Column(nullable = false)
     private Boolean isVerified;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
 
     //empty consturtor, important because jpa creates object by it
     public User() {
 
-    }
-    // sets current time automatically  (PrePersist -- JPA HOOKS)
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
     }
 
 
@@ -66,7 +60,9 @@ public class User {
     public void setId(Long id) {
         this.id = id;
     }
-    public void setEmail(String email) {}
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public void setPassword(String password) {
         this.password = password;
@@ -76,5 +72,7 @@ public class User {
         this.createdAt = createdAt;
     }
 
-    public void setVerified(Boolean verified) {}
+    public void setVerified(Boolean verified) {
+        this.isVerified = verified;
+    }
 }

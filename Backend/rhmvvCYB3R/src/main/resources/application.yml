@@ -1,12 +1,32 @@
 server:
   port: 8080
 
+jwt:
+  secret: your_super_secret_key_must_be_at_least_32_characters_long
+  expiration: 86400000
+
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/mydb
     username: rhmvv
     password: bmw52079
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: @gmail.com
+    password: XXXX XXX XXX XXX
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
+

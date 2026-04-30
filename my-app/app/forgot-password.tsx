@@ -1,19 +1,46 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-    KeyboardAvoidingView, Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { authApi } from '../api/api';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { colors, fontSize, spacing } from '../constants/theme';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSendCode = async () => {
+    if (!email.trim()) {
+      setErrorMsg('Please enter your email address');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErrorMsg(null);
+      
+      await authApi.forgotPassword(email.trim()); 
+      
+      router.push({ 
+        pathname: '/forgot-pass-verify', 
+        params: { email: email.trim(), flow: 'forgot-password' } 
+      });
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to send verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -32,14 +59,26 @@ export default function ForgotPasswordScreen() {
           <Input
             placeholder="✉  Email:"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (errorMsg) setErrorMsg(null);
+            }}
             keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!loading}
           />
 
+          {errorMsg && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{errorMsg}</Text>
+            </View>
+          )}
+
           <Button
-            title="Send"
-            onPress={() => router.push('/verification')}
+            title={loading ? 'Sending...' : 'Send'}
+            onPress={handleSendCode}
             style={styles.sendBtn}
+            disabled={loading}
           />
 
           <View style={styles.footer}>
@@ -62,10 +101,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     paddingBottom: 40,
   },
-  header: {
-    marginBottom: spacing.xl + 8,
-    gap: spacing.sm,
-  },
+  header: { marginBottom: spacing.xl + 8, gap: spacing.sm },
   title: {
     color: colors.text,
     fontSize: fontSize.xxl + 2,
@@ -73,17 +109,18 @@ const styles = StyleSheet.create({
     lineHeight: 38,
     letterSpacing: -0.5,
   },
-  sub: {
-    color: colors.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: 20,
+  sub: { color: colors.secondary, fontSize: fontSize.sm, lineHeight: 20 },
+  errorBox: {
+    backgroundColor: '#FFEBEE',
+    padding: spacing.sm,
+    borderRadius: 8,
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
   },
-  sendBtn: { width: '100%', marginTop: spacing.sm },
-  footer: {
-    flexDirection: 'row',
-    marginTop: spacing.xl,
-    justifyContent: 'center',
-  },
+  errorText: { color: '#D32F2F', fontSize: fontSize.sm, textAlign: 'center', fontWeight: '600' },
+  sendBtn: { width: '100%', marginTop: spacing.lg },
+  footer: { flexDirection: 'row', marginTop: spacing.xl, justifyContent: 'center' },
   footerText: { color: colors.secondary, fontSize: fontSize.sm },
   footerLink: { color: colors.text, fontSize: fontSize.sm, fontWeight: '700' },
 });

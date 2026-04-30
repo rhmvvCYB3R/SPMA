@@ -1,22 +1,75 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
-    KeyboardAvoidingView, Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+
+import { authApi, saveSession } from '../api/api';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { colors, fontSize, spacing } from '../constants/theme';
 
 export default function SignInScreen() {
+  const router = useRouter();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSignIn = async () => {
+    setErrorMsg(null);
+    
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      setErrorMsg('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await authApi.login(cleanEmail, cleanPassword);
+
+      if (!data?.token) {
+        throw new Error('Authentication failed: No token received');
+      }
+
+      await saveSession(data.token, data.email);
+      
+      router.replace('/(tabs)');
+
+    } catch (err: any) {
+      const serverMessage = err?.response?.data?.message || err?.message || '';
+      
+      if (serverMessage === "Email not verified") {
+        router.push({
+          pathname: '/email-verification',
+          params: { email: cleanEmail }
+        });
+        return;
+      }
+
+      const message = 
+        serverMessage.includes('401') || serverMessage.includes('403')
+        ? 'Invalid email or password'
+        : serverMessage || 'Server error. Please try again later';
+
+      setErrorMsg(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -29,7 +82,6 @@ export default function SignInScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header row */}
           <View style={styles.headerRow}>
             <View>
               <Text style={styles.title}>Welcome{'\n'}Back!</Text>
@@ -38,20 +90,33 @@ export default function SignInScreen() {
             <Text style={styles.waveEmoji}>👋</Text>
           </View>
 
-          {/* Form */}
           <View style={styles.form}>
             <Input
               placeholder="✉  E-mail:"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errorMsg) setErrorMsg(null);
+              }}
               keyboardType="email-address"
+              autoCapitalize="none"
             />
+
             <Input
               placeholder="🔑  Password:"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errorMsg) setErrorMsg(null);
+              }}
               secureTextEntry
             />
+
+            {errorMsg && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{errorMsg}</Text>
+              </View>
+            )}
 
             <View style={styles.optionsRow}>
               <TouchableOpacity
@@ -71,9 +136,10 @@ export default function SignInScreen() {
             </View>
 
             <Button
-              title="SIGN IN"
-              onPress={() => router.replace('/(tabs)')}
+              title={loading ? 'Signing In…' : 'SIGN IN'}
+              onPress={handleSignIn}
               style={styles.mainBtn}
+              disabled={loading}
             />
           </View>
 
@@ -83,6 +149,7 @@ export default function SignInScreen() {
               <Text style={styles.footerLink}>Sign Up!</Text>
             </TouchableOpacity>
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -115,17 +182,28 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     marginTop: spacing.xs,
   },
-  waveEmoji: {
-    fontSize: 44,
-    marginTop: 4,
-  },
+  waveEmoji: { fontSize: 44, marginTop: 4 },
   form: { gap: 0 },
+  errorBox: {
+    backgroundColor: '#FFEBEE',
+    padding: spacing.sm,
+    borderRadius: 8,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+  errorText: {
+    color: '#D32F2F',
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.xl,
-    marginTop: -spacing.xs,
+    marginTop: spacing.xs,
   },
   rememberRow: {
     flexDirection: 'row',
@@ -133,8 +211,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   checkbox: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     borderWidth: 1.5,
     borderColor: colors.secondary,
@@ -147,7 +225,7 @@ const styles = StyleSheet.create({
   },
   checkMark: {
     color: colors.bg,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
   },
   rememberLabel: {
@@ -158,13 +236,18 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontSize: fontSize.sm,
   },
-  mainBtn: { width: '100%' },
+  mainBtn: {
+    width: '100%',
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: spacing.xl,
   },
-  footerText: { color: colors.secondary, fontSize: fontSize.sm },
+  footerText: {
+    color: colors.secondary,
+    fontSize: fontSize.sm,
+  },
   footerLink: {
     color: colors.text,
     fontSize: fontSize.sm,

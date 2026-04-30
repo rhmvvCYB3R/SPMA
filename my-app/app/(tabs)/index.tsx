@@ -1,54 +1,70 @@
-import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { getStoredEmail, Task, tasksApi } from '../../api/api';
 import TaskCard from '../../components/ui/TaskCard';
 import { colors, fontSize, radius, spacing } from '../../constants/theme';
 
-const INITIAL_TASKS = [
-  {
-    id: '1',
-    title: 'Start to learn React Native',
-    subtitle: 'Use react native with expo, and create first app',
-    dueLabel: 'TODAY',
-    completed: false,
-  },
-  {
-    id: '2',
-    title: 'Complete Figma ux/ui',
-    subtitle: 'Complete figma project',
-    dueLabel: 'TODAY',
-    completed: false,
-  },
-  {
-    id: '3',
-    title: 'Go to the store',
-    subtitle: 'Buy bread, Pepsi, olive oil, and sweets',
-    dueLabel: 'TODAY',
-    completed: false,
-  },
-];
-
-const FILTERS = ['Today', 'Done', 'To Do', 'Not Done'];
+const FILTERS = ['All', 'To Do', 'Done'];
+const AVATAR_STORAGE_KEY = '@user_avatar';
 
 export default function HomeScreen() {
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
-  const [activeFilter, setActiveFilter] = useState('Today');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [avatar, setAvatar] = useState('🦊');
 
-  const toggle = (id: string) =>
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
+  const loadData = async (active: boolean) => {
+    try {
+      setLoading(true);
+      const [data, storedEmail, storedAvatar] = await Promise.all([
+        tasksApi.getAll(),
+        getStoredEmail(),
+        AsyncStorage.getItem(AVATAR_STORAGE_KEY),
+      ]);
+      if (active) {
+        setTasks(data);
+        setEmail(storedEmail ?? '');
+        if (storedAvatar) setAvatar(storedAvatar);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Failed to load data');
+    } finally {
+      if (active) setLoading(false);
+    }
+  };
 
-  const remove = (id: string) =>
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      loadData(active);
+      return () => { active = false; };
+    }, []),
+  );
+
+  const handleToggle = async (task: Task) => {
+    try {
+      const updated = await tasksApi.markDone(task.id);
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Failed to update task');
+    }
+  };
 
   const filtered = tasks.filter((t) => {
-    if (activeFilter === 'Done') return t.completed;
-    if (activeFilter === 'To Do' || activeFilter === 'Not Done') return !t.completed;
+    if (activeFilter === 'Done') return t.status === 'DONE';
+    if (activeFilter === 'To Do') return t.status === 'PENDING';
     return true;
   });
 
@@ -57,19 +73,18 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Hello!</Text>
-            <Text style={styles.email}>yuskaragimov79@gmail.com</Text>
+            <Text style={styles.email}>{email}</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarEmoji}>🦊</Text>
+            <Text style={styles.avatarEmoji}>{avatar}</Text>
           </View>
         </View>
 
-        {/* Filter chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -90,27 +105,33 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* Task list */}
-        <View style={styles.taskList}>
-          {filtered.length === 0 ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>No tasks here</Text>
-            </View>
-          ) : (
-            filtered.map((t) => (
-              <TaskCard
-                key={t.id}
-                title={t.title}
-                subtitle={t.subtitle}
-                dueLabel={t.dueLabel}
-                completed={t.completed}
-                onToggle={() => toggle(t.id)}
-                onDelete={() => remove(t.id)}
-              />
-            ))
-          )}
-        </View>
+        {loading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+        ) : (
+          <View style={styles.taskList}>
+            {filtered.length === 0 ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyIcon}>📭</Text>
+                <Text style={styles.emptyText}>No tasks here</Text>
+              </View>
+            ) : (
+              filtered.map((t) => (
+                <TaskCard
+                  key={t.id}
+                  id={t.id} 
+                  title={t.title}
+                  subtitle={t.description}
+                  dueLabel={t.dueDate ?? 'No date'}
+                  completed={t.status === 'DONE'}
+                  onToggle={() => handleToggle(t)}
+                  onDeleteSuccess={(deletedId) => {
+                    setTasks(prev => prev.filter(task => task.id !== deletedId));
+                  }}
+                />
+              ))
+            )}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -135,11 +156,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.5,
   },
-  email: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    marginTop: 2,
-  },
+  email: { color: colors.textMuted, fontSize: fontSize.xs, marginTop: 2 },
   avatar: {
     width: 46,
     height: 46,
@@ -166,25 +183,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    color: colors.tagText,
-    fontSize: fontSize.sm,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: colors.buttonText,
-    fontWeight: '700',
-  },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.tagText, fontSize: fontSize.sm, fontWeight: '500' },
+  chipTextActive: { color: colors.buttonText, fontWeight: '700' },
   taskList: {},
-  empty: {
-    alignItems: 'center',
-    paddingTop: spacing.xxl,
-    gap: spacing.md,
-  },
+  empty: { alignItems: 'center', paddingTop: spacing.xxl, gap: spacing.md },
   emptyIcon: { fontSize: 48 },
   emptyText: { color: colors.textMuted, fontSize: fontSize.md },
 });

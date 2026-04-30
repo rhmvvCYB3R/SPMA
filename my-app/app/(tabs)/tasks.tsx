@@ -1,31 +1,79 @@
-import React, { useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { router } from 'expo-router';
+import { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView, Platform,
-    SafeAreaView, ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
+
+import { tasksApi } from '../../api/api';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { colors, fontSize, radius, spacing } from '../../constants/theme';
+import { colors, fontSize, spacing } from '../../constants/theme';
 
 export default function AddTaskScreen() {
   const [taskName, setTaskName] = useState('');
   const [details, setDetails] = useState('');
-  const [dateTime, setDateTime] = useState('');
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    details?: string;
+    date?: string;
+  }>({});
+  const [loading, setLoading] = useState(false);
 
-  const handleAdd = () => {
-    if (!taskName.trim()) {
-      Alert.alert('Error', 'Please enter a task name');
-      return;
+  const formatDate = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const validate = () => {
+    const newErrors: typeof errors = {};
+
+    if (!taskName.trim()) newErrors.name = 'Please enter a task name';
+    if (!details.trim()) newErrors.details = 'Please enter details';
+
+    if (!date || isNaN(date.getTime())) {
+      newErrors.date = 'Please select a valid date';
     }
-    Alert.alert('Success ✓', `Task "${taskName}" added!`);
-    setTaskName('');
-    setDetails('');
-    setDateTime('');
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAdd = async () => {
+    if (!validate()) return;
+
+    try {
+      setLoading(true);
+
+      await tasksApi.create(
+        taskName.trim(),
+        details.trim(),
+        formatDate(date),
+      );
+
+      Alert.alert('Success ✓', `Task "${taskName.trim()}" has been added!`, [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)'),
+        },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Failed to create task');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,48 +82,69 @@ export default function AddTaskScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.title}>Add New Task</Text>
 
-          {/* Task name */}
           <Input
-            placeholder="Enter task name ..."
+            placeholder="Task name *"
             value={taskName}
             onChangeText={setTaskName}
-            autoCapitalize="sentences"
           />
+          {!!errors.name && <Text style={styles.error}>{errors.name}</Text>}
 
-          {/* Details multiline */}
           <Input
-            placeholder="Provide task details ..."
+            placeholder="Details *"
             value={details}
             onChangeText={setDetails}
-            autoCapitalize="sentences"
             multiline
             numberOfLines={4}
-            maxLength={36}
           />
+          {!!errors.details && (
+            <Text style={styles.error}>{errors.details}</Text>
+          )}
 
-          {/* Date & Time button */}
-          <TouchableOpacity
-            style={styles.dateTimeBtn}
-            onPress={() => Alert.alert('Date & Time', 'Date/time picker coming soon')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.dateTimeText}>
-              {dateTime || 'Date&Time'} 🗓
-            </Text>
-          </TouchableOpacity>
+          {Platform.OS === 'web' ? (
+            <Input
+              placeholder="YYYY-MM-DD *"
+              value={formatDate(date)}
+              onChangeText={(text) => {
+                const parsed = new Date(text);
+                if (!isNaN(parsed.getTime())) {
+                  setDate(parsed);
+                }
+              }}
+            />
+          ) : (
+            <>
+              <Pressable
+                onPress={() => setShowPicker(true)}
+                style={styles.dateBox}
+              >
+                <Text style={styles.dateText}>{formatDate(date)}</Text>
+              </Pressable>
+
+              {showPicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowPicker(false);
+                    if (selectedDate) setDate(selectedDate);
+                  }}
+                />
+              )}
+            </>
+          )}
+
+          {!!errors.date && <Text style={styles.error}>{errors.date}</Text>}
 
           <View style={styles.spacer} />
 
           <Button
-            title="Add Task"
+            title={loading ? 'Adding…' : 'Add Task'}
             onPress={handleAdd}
+            disabled={loading}
             style={styles.addBtn}
           />
         </ScrollView>
@@ -90,33 +159,33 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
-    paddingBottom: 120,
   },
   title: {
     color: colors.text,
     fontSize: fontSize.xl,
     fontWeight: '800',
-    letterSpacing: -0.3,
     marginBottom: spacing.xl,
     textAlign: 'center',
   },
-  dateTimeBtn: {
-    height: 50,
-    borderRadius: radius.xl,
-    backgroundColor: colors.bgInput,
+  dateBox: {
+    padding: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
+    backgroundColor: colors.bgCard,
+    marginTop: 10,
   },
-  dateTimeText: {
-    color: colors.textMuted,
+  dateText: {
+    color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: '500',
   },
-  spacer: { flex: 1, minHeight: spacing.xl },
+  error: {
+    color: '#ff4d4d',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  spacer: { height: 20 },
   addBtn: {
     width: '100%',
     marginTop: spacing.lg,

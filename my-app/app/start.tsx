@@ -1,10 +1,25 @@
+
 import { router } from 'expo-router';
-import React from 'react';
+import { useEffect } from 'react'; // Добавили useEffect
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { getToken } from '../api/api'; // Импортируем проверку токена
 import Button from '../components/ui/Button';
 import { colors, fontSize, spacing } from '../constants/theme';
 
 export default function StartScreen() {
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await getToken();
+      if (token) {
+        // Используем replace, чтобы пользователь не мог вернуться назад на экран старта
+        router.replace('/(tabs)'); 
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
