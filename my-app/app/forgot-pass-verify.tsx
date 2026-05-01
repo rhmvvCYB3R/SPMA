@@ -68,7 +68,6 @@ export default function ForgotPassVerificationScreen() {
       setLoading(true);
       
       if (flow === 'forgot-password') {
-        // Проверка кода для восстановления пароля
         await authApi.verifyResetCode(email!, fullCode);
         
         router.replace({ 
@@ -79,7 +78,6 @@ export default function ForgotPassVerificationScreen() {
           } 
         });
       } else {
-        // Обычная верификация аккаунта
         await authApi.verify(fullCode);
         router.replace({ pathname: '/sign-in', params: { verified: 'true' } });
       }
@@ -105,16 +103,14 @@ export default function ForgotPassVerificationScreen() {
 
       let response;
       if (flow === 'forgot-password') {
-        // Используем эндпоинт forgot-password, который ты скинул
         response = await authApi.forgotPassword(email);
       } else {
-        // Стандартный ресенд для регистрации
         response = await authApi.resendVerify(email);
       }
 
       setSuccessMsg(response.message);
-      setTimer(60); // Блокируем кнопку на минуту
-      setCode(['', '', '', '']); // Очищаем старый код
+      setTimer(60); 
+      setCode(['', '', '', '']); 
     } catch (error: any) {
       setErrorMsg(error?.message || 'Failed to resend code');
     } finally {
@@ -201,7 +197,6 @@ export default function ForgotPassVerificationScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Стили остаются такими же, как у тебя
   safe: { flex: 1, backgroundColor: colors.bg },
   container: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.xxl, alignItems: 'center' },
   header: { alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl },

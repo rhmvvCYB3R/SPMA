@@ -51,7 +51,7 @@ export default function TaskCard({
 
       <View style={styles.actions}>
         <TouchableOpacity 
-          onPress={handleDirectDelete} // Теперь вызываем внутреннюю функцию
+          onPress={handleDirectDelete} 
           style={styles.actionBtn}
           activeOpacity={0.2}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 10 }}

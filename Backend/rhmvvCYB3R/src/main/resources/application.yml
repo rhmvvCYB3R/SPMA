@@ -14,13 +14,13 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
 
   mail:
     host: smtp.gmail.com
     port: 587
     username: @gmail.com
-    password: XXXX XXX XXX XXX
+    password: XXX XXX XXX XXX
     properties:
       mail:
         smtp:
