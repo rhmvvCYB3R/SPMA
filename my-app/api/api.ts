@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://10.55.100.196:8080';
+const BASE_URL = 'http://152.70.5.51:8080';
 
 // SESSION STORAGE
 export async function saveSession(token: string, email: string) {
@@ -70,7 +70,6 @@ async function request<T>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // Получаем текст ответа
   const text = await res.text();
 
   if (!res.ok) {
@@ -85,7 +84,6 @@ async function request<T>(
     throw new Error(message);
   }
 
-  // ОБРАБОТКА ПУСТОГО ОТВЕТА (как в твоем Swagger: content-length: 0)
   if (!text || text.trim().length === 0) {
     return {} as T;
   }
@@ -93,7 +91,6 @@ async function request<T>(
   try {
     return JSON.parse(text);
   } catch (e) {
-    // Если сервер вернул строку вместо JSON
     return text as unknown as T;
   }
 }

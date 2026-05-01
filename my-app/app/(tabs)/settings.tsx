@@ -175,7 +175,7 @@ export default function SettingsScreen() {
     try {
       setLoading(true);
       const token = await getToken();
-      const downloadUrl = `http://10.55.100.196:8080/api/tasks/export`;
+      const downloadUrl = `http://152.70.5.51:8080/api/tasks/export`;
 
       if (Platform.OS === 'web') {
         const response = await fetch(downloadUrl, {
