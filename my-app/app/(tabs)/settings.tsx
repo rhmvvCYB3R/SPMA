@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
 import * as Notifications from 'expo-notifications';
 import { router, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -11,16 +10,30 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 
+import { File, Paths } from 'expo-file-system';
 import { clearSession, getStoredEmail, getToken } from '../../api/api';
 import { colors, fontSize, radius, spacing } from '../../constants/theme';
 
-const AVAILABLE_AVATARS = ['🦊', '🐱', '🐶', '🦁', '🐼', '🐨', '🐯', '🐸', '🐙', '🦄', '🤖', '👾'];
+const AVAILABLE_AVATARS = [
+  '🦊',
+  '🐱',
+  '🐶',
+  '🦁',
+  '🐼',
+  '🐨',
+  '🐯',
+  '🐸',
+  '🐙',
+  '🦄',
+  '🤖',
+  '👾',
+];
+
 const NOTIFICATION_OPTIONS = [
   { label: '15 min', value: 15 },
   { label: '30 min', value: 30 },
@@ -45,19 +58,22 @@ interface RowProps {
   icon: string;
   label: string;
   value?: string;
-  isSwitch?: boolean;
   badge?: string;
   onPress?: () => void;
 }
 
-function SettingRow({ icon, label, value, isSwitch, badge, onPress }: RowProps) {
-  const [enabled, setEnabled] = useState(true);
-
+function SettingRow({
+  icon,
+  label,
+  value,
+  badge,
+  onPress,
+}: RowProps) {
   return (
     <TouchableOpacity
       style={styles.row}
       onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
+      activeOpacity={0.7}
     >
       <View style={styles.rowLeft}>
         <Text style={styles.rowIcon}>{icon}</Text>
@@ -65,23 +81,13 @@ function SettingRow({ icon, label, value, isSwitch, badge, onPress }: RowProps) 
       </View>
 
       <View style={styles.rowRight}>
-        {isSwitch ? (
-          <Switch
-            value={enabled}
-            onValueChange={setEnabled}
-            trackColor={{ false: colors.border, true: '#555' }}
-            thumbColor={enabled ? colors.primary : colors.textMuted}
-            style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-          />
-        ) : badge ? (
+        {badge ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{badge}</Text>
           </View>
         ) : (
           <View style={styles.chevronWrap}>
-            <Text style={styles.value} numberOfLines={1}>
-              {value}
-            </Text>
+            <Text style={styles.value}>{value}</Text>
             <Text style={styles.chevron}>›</Text>
           </View>
         )}
@@ -95,142 +101,217 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(false);
   const [avatar, setAvatar] = useState('🦊');
   const [intervalLabel, setIntervalLabel] = useState('15 min');
-  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
-  const [isNotifyModalVisible, setIsNotifyModalVisible] = useState(false);
+
+  const [isAvatarModalVisible, setIsAvatarModalVisible] =
+    useState(false);
+
+  const [isNotifyModalVisible, setIsNotifyModalVisible] =
+    useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
+
       const load = async () => {
         try {
-          const [storedEmail, storedAvatar, storedInterval] = await Promise.all([
+          const [
+            storedEmail,
+            storedAvatar,
+            storedInterval,
+          ] = await Promise.all([
             getStoredEmail(),
             AsyncStorage.getItem(AVATAR_STORAGE_KEY),
-            AsyncStorage.getItem(NOTIFY_STORAGE_KEY)
+            AsyncStorage.getItem(NOTIFY_STORAGE_KEY),
           ]);
-          
+
           if (active) {
             setEmail(storedEmail ?? '');
-            if (storedAvatar) setAvatar(storedAvatar);
-            if (storedInterval) setIntervalLabel(storedInterval);
+
+            if (storedAvatar) {
+              setAvatar(storedAvatar);
+            }
+
+            if (storedInterval) {
+              setIntervalLabel(storedInterval);
+            }
           }
-        } catch (e) {
-          if (active) setEmail('');
+        } catch {
+          setEmail('');
         }
       };
+
       load();
-      return () => { active = false; };
+
+      return () => {
+        active = false;
+      };
     }, []),
   );
 
   const scheduleNotification = async (minutes: number) => {
-    if (Platform.OS !== 'web') {
-      const { status } = await Notifications.requestPermissionsAsync();
+    try {
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync(
+          'default',
+          {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+          },
+        );
+      }
+
+      const { status } =
+        await Notifications.requestPermissionsAsync();
+
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please enable notifications in settings');
+        Alert.alert(
+          'Permission needed',
+          'Enable notifications in settings',
+        );
         return;
       }
+
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Task Reminder 📝',
+          body: "Don't forget to check your tasks!",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: minutes * 60,
+          repeats: true,
+        },
+      });
+
+      Alert.alert('Success', 'Notifications enabled');
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Error', 'Notification failed');
     }
-
-    await Notifications.cancelAllScheduledNotificationsAsync();
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Task Reminder 📝",
-        body: "Don't forget to check your tasks!",
-      },
-      trigger: {
-        seconds: minutes * 60,
-        repeats: true,
-      } as Notifications.NotificationTriggerInput,
-    });
   };
 
- const selectInterval = async (label: string, minutes: number) => {
+  const selectInterval = async (
+    label: string,
+    minutes: number,
+  ) => {
     setIsNotifyModalVisible(false);
-    
+
     try {
       setIntervalLabel(label);
-      
-      await Promise.all([
-        AsyncStorage.setItem(NOTIFY_STORAGE_KEY, label),
-        scheduleNotification(minutes)
-      ]);
-    } catch (e) {
-      Alert.alert('Error', 'Failed to save notification settings');
+
+      await AsyncStorage.setItem(
+        NOTIFY_STORAGE_KEY,
+        label,
+      );
+
+      await scheduleNotification(minutes);
+    } catch {
+      Alert.alert(
+        'Error',
+        'Failed to save notification settings',
+      );
     }
   };
 
   const selectAvatar = async (item: string) => {
     try {
-      await AsyncStorage.setItem(AVATAR_STORAGE_KEY, item);
+      await AsyncStorage.setItem(
+        AVATAR_STORAGE_KEY,
+        item,
+      );
+
       setAvatar(item);
+
       setIsAvatarModalVisible(false);
-    } catch (e) {
-      Alert.alert('Error', 'Failed to save avatar locally');
+    } catch {
+      Alert.alert(
+        'Error',
+        'Failed to save avatar locally',
+      );
     }
   };
 
   const handleExport = async () => {
-    try {
-      setLoading(true);
-      const token = await getToken();
-      const downloadUrl = `http://152.70.5.51:8080/api/tasks/export`;
+  try {
+    setLoading(true);
 
-      if (Platform.OS === 'web') {
-        const response = await fetch(downloadUrl, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (!response.ok) throw new Error('Failed to download file');
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'progress.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        const fileUri = FileSystem + 'progress.xlsx';
-        const downloadRes = await FileSystem.downloadAsync(downloadUrl, fileUri, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (downloadRes.status === 200) {
-          await Sharing.shareAsync(downloadRes.uri);
-        } else {
-          throw new Error(`Server returned ${downloadRes.status}`);
-        }
+    const token = await getToken();
+
+    const downloadUrl =
+      'https://sp-ma.duckdns.org/api/tasks/export';
+
+    const file = new File(
+      Paths.document,
+      'progress.xlsx'
+    );
+
+    try {
+      await file.delete();
+    } catch {}
+
+    await File.downloadFileAsync(
+      downloadUrl,
+      file,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    } catch (err: any) {
-      Alert.alert('Export Failed', err.message ?? 'Something went wrong');
-    } finally {
-      setLoading(false);
+    );
+
+    const canShare = await Sharing.isAvailableAsync();
+
+    if (!canShare) {
+      Alert.alert('Error', 'Sharing not available');
+      return;
     }
-  };
+
+    await Sharing.shareAsync(file.uri);
+
+    Alert.alert('Success', 'File downloaded');
+  } catch (err: any) {
+    console.log(err);
+
+    Alert.alert(
+      'Export Failed',
+      err?.message || 'Something went wrong'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSignOut = async () => {
     try {
       await clearSession();
       router.replace('/start');
-    } catch (e) {
+    } catch {
       router.replace('/start');
     }
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Settings</Text>
 
         <View style={styles.avatarSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarEmoji}>{avatar}</Text>
+            <Text style={styles.avatarEmoji}>
+              {avatar}
+            </Text>
           </View>
-          <TouchableOpacity 
-            style={styles.editBtn} 
-            onPress={() => setIsAvatarModalVisible(true)}
+
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() =>
+              setIsAvatarModalVisible(true)
+            }
           >
             <Text style={styles.editIcon}>✏️</Text>
           </TouchableOpacity>
@@ -241,46 +322,87 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <SettingRow
             icon="✉️"
-            label="E-mail:"
-            value={email && email.length > 0 ? email : '—'}
-            onPress={() => router.push('/change-email')}
+            label="E-mail"
+            value={email || '—'}
+            onPress={() =>
+              router.push('/change-email')
+            }
           />
+
           <View style={styles.divider} />
+
           <SettingRow
             icon="🔑"
             label="Password"
-            value="••••••••••••"
-            onPress={() => router.push('/change-pass')}
+            value="••••••••"
+            onPress={() =>
+              router.push('/change-pass')
+            }
           />
+
           <View style={styles.divider} />
-          <SettingRow 
-            icon="🔔" 
-            label="Notifications" 
-            badge={`${intervalLabel} ∨`} 
-            onPress={() => setIsNotifyModalVisible(true)}
+
+          <SettingRow
+            icon="🔔"
+            label="Notifications"
+            badge={intervalLabel}
+            onPress={() =>
+              setIsNotifyModalVisible(true)
+            }
           />
+
           <View style={styles.divider} />
+
           <SettingRow
             icon="📥"
-            label={loading ? "Downloading..." : "Download All Progress"}
-            badge=".xlsx ↓"
+            label={
+              loading
+                ? 'Downloading...'
+                : 'Download Progress'
+            }
+            badge=".xlsx"
             onPress={handleExport}
           />
         </View>
 
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} activeOpacity={0.85}>
-          <Text style={styles.signOutText}>Sign Out</Text>
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={handleSignOut}
+        >
+          <Text style={styles.signOutText}>
+            Sign Out
+          </Text>
         </TouchableOpacity>
 
-        {/* Modal для Аватара */}
-        <Modal animationType="fade" transparent visible={isAvatarModalVisible} onRequestClose={() => setIsAvatarModalVisible(false)}>
-          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsAvatarModalVisible(false)}>
+        <Modal
+          animationType="fade"
+          transparent
+          visible={isAvatarModalVisible}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() =>
+              setIsAvatarModalVisible(false)
+            }
+          >
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Choose Avatar</Text>
+              <Text style={styles.modalTitle}>
+                Choose Avatar
+              </Text>
+
               <View style={styles.avatarGrid}>
                 {AVAILABLE_AVATARS.map((item) => (
-                  <TouchableOpacity key={item} style={styles.avatarOption} onPress={() => selectAvatar(item)}>
-                    <Text style={styles.optionEmoji}>{item}</Text>
+                  <TouchableOpacity
+                    key={item}
+                    style={styles.avatarOption}
+                    onPress={() =>
+                      selectAvatar(item)
+                    }
+                  >
+                    <Text style={styles.optionEmoji}>
+                      {item}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -288,47 +410,73 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </Modal>
 
-        {/* Modal для Уведомлений */}
-        <Modal animationType="slide" transparent visible={isNotifyModalVisible} onRequestClose={() => setIsNotifyModalVisible(false)}>
-          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsNotifyModalVisible(false)}>
+        <Modal
+          animationType="slide"
+          transparent
+          visible={isNotifyModalVisible}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() =>
+              setIsNotifyModalVisible(false)
+            }
+          >
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Notification Interval</Text>
+              <Text style={styles.modalTitle}>
+                Notification Interval
+              </Text>
+
               {NOTIFICATION_OPTIONS.map((opt) => (
-                <TouchableOpacity key={opt.value} style={styles.intervalOption} onPress={() => selectInterval(opt.label, opt.value)}>
-                  <Text style={styles.intervalText}>{opt.label}</Text>
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.intervalOption}
+                  onPress={() =>
+                    selectInterval(
+                      opt.label,
+                      opt.value,
+                    )
+                  }
+                >
+                  <Text style={styles.intervalText}>
+                    {opt.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </TouchableOpacity>
         </Modal>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+
   scroll: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
     paddingBottom: 120,
     alignItems: 'center',
   },
+
   title: {
     color: colors.text,
     fontSize: fontSize.xxl,
     fontWeight: '800',
-    letterSpacing: -0.5,
-    textAlign: 'center',
     marginBottom: spacing.lg,
-    alignSelf: 'center',
   },
+
   avatarSection: {
     alignItems: 'center',
     marginBottom: spacing.xl,
     position: 'relative',
   },
+
   avatar: {
     width: 80,
     height: 80,
@@ -339,21 +487,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarEmoji: { fontSize: 44 },
+
+  avatarEmoji: {
+    fontSize: 44,
+  },
+
   editBtn: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.bgInput,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  editIcon: { fontSize: 14 },
+
+  editIcon: {
+    fontSize: 18,
+  },
+
   sectionLabel: {
     color: colors.text,
     fontSize: fontSize.lg,
@@ -361,6 +509,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: spacing.sm,
   },
+
   card: {
     width: '100%',
     backgroundColor: colors.bgCard,
@@ -370,30 +519,66 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: spacing.xl,
   },
+
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: 13,
+    paddingVertical: 14,
   },
-  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
-  rowIcon: { fontSize: 16, width: 22 },
-  rowLabel: { color: colors.text, fontSize: fontSize.sm, fontWeight: '500' },
-  rowRight: { flexDirection: 'row', alignItems: 'center', maxWidth: 180 },
-  chevronWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  value: { color: colors.textMuted, fontSize: fontSize.xs, maxWidth: 150, textAlign: 'right' },
-  chevron: { color: colors.textMuted, fontSize: 16 },
+
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  rowIcon: {
+    fontSize: 18,
+    marginRight: spacing.sm,
+  },
+
+  rowLabel: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+  },
+
+  rowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  chevronWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  value: {
+    color: colors.textMuted,
+    marginRight: 5,
+  },
+
+  chevron: {
+    color: colors.textMuted,
+    fontSize: 18,
+  },
+
   badge: {
     backgroundColor: colors.bgInput,
     borderRadius: radius.sm,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  badgeText: { color: colors.secondary, fontSize: fontSize.xs, fontWeight: '500' },
-  divider: { height: 1, backgroundColor: colors.border, marginHorizontal: spacing.md },
+
+  badgeText: {
+    color: colors.secondary,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+  },
+
   signOutBtn: {
     width: '100%',
     height: 50,
@@ -403,55 +588,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signOutText: { color: '#e74c3c', fontSize: fontSize.md, fontWeight: '700', letterSpacing: 0.5 },
+
+  signOutText: {
+    color: '#e74c3c',
+    fontWeight: '700',
+  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   modalContent: {
     width: '85%',
     backgroundColor: colors.bgCard,
     borderRadius: radius.lg,
     padding: spacing.lg,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
+
   modalTitle: {
     fontSize: fontSize.lg,
     fontWeight: '700',
-    color: colors.text,
     marginBottom: spacing.md,
+    color: colors.text,
   },
+
   avatarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: spacing.md,
   },
+
   avatarOption: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.bgInput,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    margin: 8,
   },
-  optionEmoji: { fontSize: 32 },
+
+  optionEmoji: {
+    fontSize: 36,
+  },
+
   intervalOption: {
     width: '100%',
     padding: spacing.md,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
+
   intervalText: {
-    fontSize: fontSize.md,
     color: colors.text,
-    fontWeight: '500',
-  }
+    fontSize: fontSize.md,
+  },
 });

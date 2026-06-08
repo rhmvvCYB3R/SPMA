@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://152.70.5.51:8080';
+const BASE_URL = 'https://sp-ma.duckdns.org';
+//const BASE_URL = 'http://10.55.98.184:8080';
 
 // SESSION STORAGE
 export async function saveSession(token: string, email: string) {

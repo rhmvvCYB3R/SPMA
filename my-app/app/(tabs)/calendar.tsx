@@ -69,7 +69,6 @@ export default function CalendarScreen() {
     setMonthIdx(m);
     setSelectedDay(d);
     
-    // Прокрутка к текущему дню (примерное смещение)
     scrollRef.current?.scrollTo({ x: (d - 1) * 50, animated: true });
   };
 

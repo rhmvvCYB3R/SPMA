@@ -59,11 +59,10 @@ public class TaskController {
         response.setHeader("Content-Disposition", "attachment; filename=tasks.csv");
 
         PrintWriter writer = response.getWriter();
-        writer.println("ID,Title,Description,DueDate,Status");
+        writer.println("Title,Description,DueDate,Status");
 
         for (Task t : tasks) {
             writer.println(
-                    t.getId() + "," +
                             t.getTitle() + "," +
                             t.getDescription() + "," +
                             t.getDueDate() + "," +

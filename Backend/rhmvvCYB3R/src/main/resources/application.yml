@@ -4,7 +4,11 @@ server:
 jwt:
   secret: your_super_secret_key_must_be_at_least_32_characters_long
   expiration: 86400000
-
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
@@ -14,13 +18,13 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
 
   mail:
     host: smtp.gmail.com
     port: 587
-    username: SSSS@gmail.com
-    password: XXX XXX XXX XXX
+    username: spmasupport@gmail.com
+    password: smtz ulfp zhgy uvgz
     properties:
       mail:
         smtp:
