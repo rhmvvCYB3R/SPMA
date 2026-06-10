@@ -248,10 +248,18 @@ spma/
 │   │   ├── tasks.tsx
 │   │   └── settings.tsx
 │   │
-│   ├── login.tsx
-│   ├── register.tsx
+│   ├── change-email.tsx
+│   ├── change-pass.tsx
+│   └── forgot-pass-change-password.tsx
+│   └── email-verification.tsx
+│   └── forgot-pass-verify.tsx
+│   └── forgot-password.tsx
+│   └── index.tsx
 │   └── _layout.tsx
-│
+│   └── sign-in.tsx
+│   └── sign-up.tsx
+│   └── splash.tsx
+│   └── start.tsx
 ├── api/
 │   └── api.ts
 │
