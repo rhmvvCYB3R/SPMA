@@ -2,8 +2,8 @@
 
 **Modern React Native task management application with full authentication and Spring Boot backend.**
 
-![SPMA Banner](<img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/929b2f1b-c53e-4059-8a04-f7773c0e04ea" />
-)
+<img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/929b2f1b-c53e-4059-8a04-f7773c0e04ea" />
+
 
 ## 📋 Project Information
 
