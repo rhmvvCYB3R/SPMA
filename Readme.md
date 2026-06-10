@@ -67,7 +67,11 @@
 
 **Home** | **Calendar** | **Add Task** | **Settings**
 ---|---|---|---
-![Home](screenshots/home.png) | ![Calendar](screenshots/calendar.png) | ![Add Task](screenshots/add-task.png) | ![Settings](screenshots/settings.png)
+![Home](<img width="1151" height="2560" alt="image" src="https://github.com/user-attachments/assets/b8e3ce69-3774-4805-86e5-0bfe0038f624" />
+) | ![Calendar](<img width="1151" height="2560" alt="image" src="https://github.com/user-attachments/assets/08d1a817-9df2-4e6e-9ce8-8e53771edd96" />
+) | ![Add Task](<img width="1151" height="2560" alt="image" src="https://github.com/user-attachments/assets/ae7a8ea1-0e15-49d9-a220-fb1c98eb4e50" />
+) | ![Settings](<img width="1151" height="2560" alt="image" src="https://github.com/user-attachments/assets/3cad1a09-417d-4def-b918-f180927010c4" />
+)
 
 ---
 
