@@ -240,7 +240,7 @@ export default function SettingsScreen() {
     const token = await getToken();
 
     const downloadUrl =
-      'https://sp-ma.duckdns.org/api/tasks/export';
+      'http://152.70.5.51/api/tasks/export';
 
     const file = new File(
       Paths.document,
