@@ -12,7 +12,7 @@ Built with **React Native (Expo)** and **Spring Boot**
 ![Expo](https://img.shields.io/badge/Expo-SDK_54-000020?logo=expo)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?logo=springboot&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-Authentication-orange)
 ![License](https://img.shields.io/badge/License-Academic-blue)
 ![Status](https://img.shields.io/badge/Status-Completed-success)
