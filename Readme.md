@@ -8,12 +8,14 @@
 
 Built with **React Native (Expo)** and **Spring Boot**
 
-![React Native](https://img.shields.io/badge/React_Native-0.79-blue?logo=react)
-![Expo](https://img.shields.io/badge/Expo-SDK_53-black?logo=expo)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-green?logo=springboot)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)
-![JWT](https://img.shields.io/badge/Auth-JWT-orange)
+![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB?logo=react&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-SDK_54-000020?logo=expo)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-Authentication-orange)
+![License](https://img.shields.io/badge/License-Academic-blue)
+![Status](https://img.shields.io/badge/Status-Completed-success)
 
 </div>
 
@@ -131,15 +133,15 @@ Personalization and productivity tools.
 
 ## Frontend
 
-* React Native
-* Expo
-* Expo Router
-* TypeScript
-* AsyncStorage
-* Expo Notifications
-* Expo FileSystem
-* Expo Sharing
-* DateTime Picker
+- React Native 0.81
+- Expo SDK 54
+- Expo Router
+- TypeScript
+- AsyncStorage
+- Expo Notifications
+- Expo FileSystem
+- Expo Sharing
+- React Native DateTimePicker
 
 ---
 
